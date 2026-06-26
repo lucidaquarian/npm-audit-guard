@@ -1,0 +1,52 @@
+{
+  "name": "npm-audit-guard",
+  "version": "0.1.0",
+  "description": "Smarter npm audit wrapper: filters dev vs prod vulnerabilities, supports justified ignore rules with expiry dates, prints human-readable output, and fails CI only on real production risk.",
+  "type": "module",
+  "bin": {
+    "npm-audit-guard": "dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "npm",
+    "audit",
+    "security",
+    "cli",
+    "ci",
+    "vulnerabilities",
+    "devops",
+    "supply-chain"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucidaquarian/npm-audit-guard.git"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
