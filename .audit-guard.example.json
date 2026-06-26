@@ -1,0 +1,15 @@
+{
+  "level": "high",
+  "prodOnly": true,
+  "ignore": [
+    {
+      "id": "lodash",
+      "reason": "Patched via npm resolutions; advisory path not reachable in our usage. Tracked in JIRA-123.",
+      "expires": "2026-12-31"
+    },
+    {
+      "id": "GHSA-vh95-rmgr-6w4m",
+      "reason": "No upstream fix available yet; transitive dev tooling only."
+    }
+  ]
+}
