@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { audit } from "./index.js";
+import { audit, fix } from "./index.js";
 import { AuditExecutionError } from "./npm-audit.js";
-import { toHuman, toJson } from "./report.js";
+import { fixToHuman, fixToJson, toHuman, toJson } from "./report.js";
 import { colors } from "./colors.js";
 import { isSeverity, type Severity } from "./types.js";
 
@@ -19,6 +19,10 @@ Options:
                            One of: info, low, moderate, high, critical.
                            Default: high (or "level" from config).
   -p, --prod-only          Audit production dependencies only (npm --omit=dev).
+      --fix                Run \`npm audit fix\`, then re-audit and report what
+                           was resolved and what still blocks.
+      --force              With --fix, allow semver-major upgrades
+                           (\`npm audit fix --force\`). May be breaking.
       --json               Output machine-readable JSON instead of text.
   -c, --config <path>      Path to a config file (skips auto-discovery).
   -C, --cwd <path>         Directory to audit. Default: current directory.
@@ -45,6 +49,8 @@ Exit codes:
 interface CliArgs {
   level?: Severity;
   prodOnly?: boolean;
+  fix: boolean;
+  force: boolean;
   json: boolean;
   configPath?: string;
   cwd?: string;
@@ -55,7 +61,13 @@ interface CliArgs {
 class CliError extends Error {}
 
 function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { json: false, help: false, version: false };
+  const args: CliArgs = {
+    fix: false,
+    force: false,
+    json: false,
+    help: false,
+    version: false,
+  };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -72,6 +84,12 @@ function parseArgs(argv: string[]): CliArgs {
       case "--prod-only":
       case "--production":
         args.prodOnly = true;
+        break;
+      case "--fix":
+        args.fix = true;
+        break;
+      case "--force":
+        args.force = true;
         break;
       case "--json":
         args.json = true;
@@ -159,7 +177,27 @@ async function main(): Promise<number> {
     return 0;
   }
 
+  if (args.force && !args.fix) {
+    process.stderr.write(
+      colors.yellow("Note: --force has no effect without --fix.") + "\n",
+    );
+  }
+
   try {
+    if (args.fix) {
+      const fixResult = await fix({
+        cwd: args.cwd,
+        level: args.level,
+        prodOnly: args.prodOnly,
+        configPath: args.configPath,
+        force: args.force,
+      });
+      process.stdout.write(
+        (args.json ? fixToJson(fixResult) : fixToHuman(fixResult)) + "\n",
+      );
+      return fixResult.after.ok ? 0 : 1;
+    }
+
     const result = await audit({
       cwd: args.cwd,
       level: args.level,

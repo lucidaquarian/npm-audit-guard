@@ -1,5 +1,6 @@
 import { colors, colorForSeverity } from "./colors.js";
 import { maxSeverity } from "./core.js";
+import type { FixResult } from "./fix.js";
 import {
   type AuditResult,
   type Finding,
@@ -127,6 +128,69 @@ export function toHuman(result: AuditResult): string {
           ),
   );
 
+  return lines.join("\n");
+}
+
+/** JSON payload for `--fix --json`. */
+export function fixToJson(result: FixResult): string {
+  return JSON.stringify(
+    {
+      ok: result.after.ok,
+      resolved: result.resolved,
+      remaining: result.remaining,
+      before: { active: result.before.active, counts: result.before.counts },
+      after: { active: result.after.active, counts: result.after.counts },
+    },
+    null,
+    2,
+  );
+}
+
+/** Human-readable summary of a fix run, including the post-fix audit. */
+export function fixToHuman(result: FixResult): string {
+  const lines: string[] = [];
+  lines.push(colors.bold("npm-audit-guard fix"));
+  lines.push("");
+
+  if (result.resolved.length > 0) {
+    lines.push(
+      colors.green(
+        `✔ Resolved ${result.resolved.length} blocking ` +
+          `${result.resolved.length === 1 ? "vulnerability" : "vulnerabilities"}:`,
+      ),
+    );
+    for (const f of result.resolved) {
+      lines.push(colors.green(`    ${f.name} [${f.severity}]`));
+    }
+    lines.push("");
+  } else {
+    lines.push(colors.gray("No blocking vulnerabilities were auto-resolved."));
+    lines.push("");
+  }
+
+  if (result.remaining.length > 0) {
+    lines.push(
+      colors.yellow(
+        `⚠ ${result.remaining.length} blocking ` +
+          `${result.remaining.length === 1 ? "vulnerability" : "vulnerabilities"} could not be fixed automatically:`,
+      ),
+    );
+    for (const f of result.remaining) {
+      const major =
+        typeof f.fixAvailable === "object" && f.fixAvailable.isSemVerMajor
+          ? colors.yellow(" (needs --force / semver-major)")
+          : f.fixAvailable === false
+            ? colors.gray(" (no fix available)")
+            : "";
+      lines.push(colors.yellow(`    ${f.name} [${f.severity}]${major}`));
+    }
+    lines.push("");
+  }
+
+  // Append the standard post-fix audit report for full context.
+  lines.push(colors.gray("— post-fix audit —"));
+  lines.push("");
+  lines.push(toHuman(result.after));
   return lines.join("\n");
 }
 

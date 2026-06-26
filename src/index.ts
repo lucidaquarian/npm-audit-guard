@@ -57,6 +57,7 @@ export async function audit(options: AuditOptions = {}): Promise<AuditResult> {
   return classify(parsed, config, { now: options.now });
 }
 
+export { fix, type FixOptions, type FixResult } from "./fix.js";
 export { classify } from "./core.js";
 export { parseAuditReport } from "./parse.js";
 export { loadFileConfig, resolveConfig, DEFAULT_LEVEL } from "./config.js";

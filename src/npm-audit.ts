@@ -14,7 +14,7 @@ export interface RunOptions {
  */
 export type RawAuditReport = Record<string, unknown>;
 
-const NPM_BIN = process.platform === "win32" ? "npm.cmd" : "npm";
+export const NPM_BIN = process.platform === "win32" ? "npm.cmd" : "npm";
 
 /**
  * Run `npm audit --json` and return the parsed report object.
@@ -60,6 +60,38 @@ export async function runNpmAudit(
   }
 
   return parsed as RawAuditReport;
+}
+
+export interface FixOptions {
+  /** Working directory. Defaults to process.cwd(). */
+  cwd?: string;
+  /** Only fix production dependencies. Adds `--omit=dev`. */
+  prodOnly?: boolean;
+  /**
+   * Allow semver-major upgrades (`npm audit fix --force`). These can introduce
+   * breaking changes, so it is opt-in.
+   */
+  force?: boolean;
+}
+
+/**
+ * Run `npm audit fix` and return npm's combined output.
+ *
+ * Like `npm audit`, `npm audit fix` exits non-zero when vulnerabilities
+ * remain after fixing — that is a normal outcome, not a failure, so the exit
+ * code is not treated as an error here. The authoritative post-fix state is
+ * determined by re-running the audit afterwards. A genuine failure to launch
+ * npm (e.g. ENOENT) still rejects via the spawn `error` event.
+ */
+export async function runNpmAuditFix(
+  options: FixOptions = {},
+): Promise<string> {
+  const args = ["audit", "fix"];
+  if (options.prodOnly) args.push("--omit=dev");
+  if (options.force) args.push("--force");
+
+  const { stdout, stderr } = await spawnCapture(NPM_BIN, args, options.cwd);
+  return stdout + stderr;
 }
 
 export class AuditExecutionError extends Error {

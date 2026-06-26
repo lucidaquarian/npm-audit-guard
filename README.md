@@ -57,6 +57,10 @@ Options:
                            One of: info, low, moderate, high, critical.
                            Default: high (or "level" from config).
   -p, --prod-only          Audit production dependencies only (npm --omit=dev).
+      --fix                Run `npm audit fix`, then re-audit and report what
+                           was resolved and what still blocks.
+      --force              With --fix, allow semver-major upgrades
+                           (`npm audit fix --force`). May be breaking.
       --json               Output machine-readable JSON instead of text.
   -c, --config <path>      Path to a config file (skips auto-discovery).
   -C, --cwd <path>         Directory to audit. Default: current directory.
@@ -123,6 +127,31 @@ A bare string is shorthand for `{ "id": "<string>" }`:
 ```
 
 Ignore rules that match nothing are reported as safe to remove.
+
+## Auto-fixing
+
+`--fix` runs `npm audit fix`, then re-audits and shows you exactly what changed — which blocking findings were resolved and which still remain:
+
+```console
+$ npx npm-audit-guard --fix
+npm-audit-guard fix
+
+✔ Resolved 1 blocking vulnerability:
+    minimist [critical]
+
+— post-fix audit —
+...
+✔ PASS  no blocking production risk found.
+```
+
+By default `npm audit fix` only applies non-breaking upgrades. Add `--force` to allow semver-major bumps (`npm audit fix --force`) for findings that can't be resolved within your stated dependency ranges. Findings with no fix at all are reported as such. The exit code reflects the **post-fix** state, so `--fix` is safe to use directly in CI.
+
+```bash
+npx npm-audit-guard --fix          # safe, non-breaking fixes only
+npx npm-audit-guard --fix --force  # allow breaking upgrades
+```
+
+The same is available programmatically via `fix()`, which returns `{ before, after, resolved, remaining, npmOutput }`.
 
 ## Programmatic API
 
